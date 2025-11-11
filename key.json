@@ -1,0 +1,11 @@
+{
+  "imagesFolder": "assets",
+  "answers": {
+    "1.png": "A",
+    "2.png": "B",
+    "3.png": "C",
+    "4.png": "D",
+    "5.png": "A"
+    // Add more images here as needed
+  }
+}
