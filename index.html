@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCQ Test</title>
+<style>
+body { font-family: Arial, sans-serif; background: #f0f4f8; padding: 20px; display: flex; justify-content: center; }
+.container { background: #fff; padding: 20px; border-radius: 12px; max-width: 600px; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+h1 { text-align: center; color: #1e3a8a; }
+.question-image { max-width: 100%; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 10px; }
+.choices label { display: block; margin: 6px 0; }
+button { margin: 8px 4px 0; padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; }
+button.primary { background: #2563eb; color: #fff; }
+button.secondary { background: #fff; color: #2563eb; border: 1px solid #2563eb; }
+.result { margin-top: 20px; padding: 12px; border-radius: 8px; background: #ecfdf5; border: 1px solid #d1fae5; }
+.nav { display: flex; justify-content: space-between; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>MCQ Test</h1>
+<div id="quiz">
+  <div id="qNum"></div>
+  <img id="qImage" class="question-image" alt="Question">
+  <div class="choices" id="choices"></div>
+  <div class="nav">
+    <button class="secondary" id="prevBtn">Prev</button>
+    <button class="secondary" id="nextBtn">Next</button>
+    <button class="primary" id="submitBtn">Submit</button>
+  </div>
+  <div id="result" class="result" style="display:none;"></div>
+</div>
+</div>
+
+<script>
+let questions = [], current = 0, userAnswers = [], answersMap = {};
+
+async function loadKey() {
+  try {
+    const res = await fetch('key.json');
+    if(!res.ok) throw new Error('key.json missing');
+    const key = await res.json();
+    const folder = key.imagesFolder || '';
+    const sortedFiles = Object.keys(key.answers).sort((a,b)=>a.localeCompare(b, undefined, {numeric:true}));
+    questions = sortedFiles.map(f => ({file: f, answer: key.answers[f], folder}));
+    questions.forEach((q,i)=>answersMap[i]=q.answer);
+    userAnswers = Array(questions.length).fill(null);
+    showQuestion(0);
+  } catch(e) { alert('Error loading key.json: '+e.message); }
+}
+
+function showQuestion(i){
+  if(i<0||i>=questions.length) return;
+  current = i;
+  document.getElementById('qNum').textContent = `Question ${i+1} of ${questions.length}`;
+  const q = questions[i];
+  document.getElementById('qImage').src = q.folder ? `${q.folder}/${q.file}` : q.file;
+  const ch = document.getElementById('choices');
+  ch.innerHTML = '';
+  ['A','B','C','D'].forEach(opt => {
+    ch.innerHTML += `<label><input type="radio" name="q${i}" value="${opt}"> ${opt}</label>`;
+  });
+  if(userAnswers[i]) document.querySelector(`input[name=q${i}][value=${userAnswers[i]}]`).checked = true;
+}
+
+function saveAns(){ const sel=document.querySelector(`input[name=q${current}]:checked`); userAnswers[current]=sel?sel.value:null; }
+function nextQ(){ if(current < questions.length-1){ saveAns(); showQuestion(current+1); } }
+function prevQ(){ if(current > 0){ saveAns(); showQuestion(current-1); } }
+
+function submitTest(){
+  saveAns();
+  let score = 0;
+  questions.forEach((q,i)=>{ if(userAnswers[i]===q.answer) score++; });
+  const resDiv = document.getElementById('result');
+  resDiv.style.display = 'block';
+  resDiv.textContent = `Score: ${score} / ${questions.length}`;
+}
+
+document.getElementById('nextBtn').onclick = nextQ;
+document.getElementById('prevBtn').onclick = prevQ;
+document.getElementById('submitBtn').onclick = submitTest;
+
+loadKey();
+</script>
+</body>
+</html>
